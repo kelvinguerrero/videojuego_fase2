@@ -52,6 +52,9 @@ sound = transform.GetComponent(SoundController);
 private var canSteer : boolean;
 private var canDrive : boolean;
 
+var SpeedOmeterDial : Texture2D;
+var SpeedOmeterPointer : Texture2D;
+
 class Wheel
 {
 	var collider : WheelCollider;
@@ -64,6 +67,16 @@ class Wheel
 	var lastEmitTime : float = Time.time;
 	var wheelVelo : Vector3 = Vector3.zero;
 	var groundSpeed : Vector3 = Vector3.zero;
+}
+
+function OnGUI()
+{
+	GUI.DrawTexture( Rect( Screen.width - 256,Screen.height - 128,256,128),SpeedOmeterDial );
+	var speedFactor : float = rigidbody.velocity.magnitude / topSpeed;
+	var votationAngle = Mathf.Lerp(0,180,speedFactor);
+	GUIUtility.RotateAroundPivot(votationAngle,Vector2(Screen.width-128,Screen.height));
+	GUI.DrawTexture( Rect( Screen.width - 256,Screen.height - 128,256,256),SpeedOmeterPointer );
+
 }
 
 function Start()
