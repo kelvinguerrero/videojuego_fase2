@@ -10,6 +10,7 @@
 // AudioClips, since the should not be affected by the pitch-changes applied to other AudioSources.
 
 private var car : Car;
+private var car2 : Car2;
 
 var D : AudioClip = null;
 var DVolume : float = 1.0;
@@ -86,6 +87,7 @@ private var prevPitchFactor : float = 0;
 function Awake()
 {
 	car = transform.GetComponent(Car);
+	car2 = transform.GetComponent(Car2);
 	
 	DVolume *= 0.4;
 	EVolume *= 0.4;
@@ -164,23 +166,35 @@ function Awake()
 
 function Update()
 {
-	var carSpeed : float = car.rigidbody.velocity.magnitude;
-	var carSpeedFactor : float = Mathf.Clamp01(carSpeed / car.topSpeed);
-	
+	var carSpeed : float;
+	var carSpeedFactor : float;
+	try{
+		carSpeed = car.rigidbody.velocity.magnitude;
+		carSpeedFactor = Mathf.Clamp01(carSpeed / car.topSpeed);
+	}
+	catch(UnityException)
+	{
+		carSpeed = car2.rigidbody.velocity.magnitude;
+		carSpeedFactor = Mathf.Clamp01(carSpeed / car2.topSpeed);
+	}
+	carSpeedFactor = 0;
 	KAudio.volume = Mathf.Lerp(0, KVolume, carSpeedFactor);
 	windAudio.volume = Mathf.Lerp(0, windVolume, carSpeedFactor * 2);
-	
-	if(shiftingGear)
-		return;
-	
+
 	var pitchFactor : float = Sinerp(0, topGear, carSpeedFactor);
 	var newGear : int = pitchFactor;
 	
 	pitchFactor -= newGear;
 	var throttleFactor : float = pitchFactor;
 	pitchFactor *= 0.3;
-	pitchFactor += throttleFactor * (0.7) * Mathf.Clamp01(car.throttle * 2);
-	
+	try
+	{
+		pitchFactor += throttleFactor * (0.7) * Mathf.Clamp01(car.throttle * 2);
+	}
+	catch(UnityException)
+	{
+		pitchFactor += throttleFactor * (0.7) * Mathf.Clamp01(car2.throttle * 2);
+	}
 	if(newGear != gear)
 	{
 		if(newGear > gear)
@@ -232,9 +246,19 @@ function SetVolume(pitch : float)
 	var pitchFactor : float = Mathf.Lerp(0, 1, (pitch - startPitch) / (highPitchSecond - startPitch));
 	DAudio.volume = Mathf.Lerp(0, DVolume, pitchFactor);
 	var fVolume : float = Mathf.Lerp(FVolume * 0.80, FVolume, pitchFactor);
-	FAudio.volume = fVolume * 0.7 + fVolume * 0.3 * Mathf.Clamp01(car.throttle);
-	var eVolume : float = Mathf.Lerp(EVolume * 0.89, EVolume, pitchFactor);
-	EAudio.volume = eVolume * 0.8 + eVolume * 0.2 * Mathf.Clamp01(car.throttle);
+	var eVolume : float;
+	try
+	{
+		FAudio.volume = fVolume * 0.7 + fVolume * 0.3 * Mathf.Clamp01(car.throttle);
+		eVolume= Mathf.Lerp(EVolume * 0.89, EVolume, pitchFactor);
+		EAudio.volume = eVolume * 0.8 + eVolume * 0.2 * Mathf.Clamp01(car.throttle);
+	}
+	catch(UnityException)
+	{
+		FAudio.volume = fVolume * 0.7 + fVolume * 0.3 * Mathf.Clamp01(car2.throttle);
+		eVolume= Mathf.Lerp(EVolume * 0.89, EVolume, pitchFactor);
+		EAudio.volume = eVolume * 0.8 + eVolume * 0.2 * Mathf.Clamp01(car2.throttle);
+	}
 }
 
 function GearShift(oldPitchFactor : float, newPitchFactor : float, gear : int, shiftUp : boolean)
